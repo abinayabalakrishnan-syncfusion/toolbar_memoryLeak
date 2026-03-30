@@ -59,7 +59,6 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
             }
         };
         HScroll.prototype.render = function () {
-            // Store bound handlers to prevent closure leaks during destroy
             this.boundTouchHandler = this.touchHandler.bind(this);
             this.boundSwipeHandler = this.swipeHandler.bind(this);
             this.touchModule = new ej2_base_1.Touch(this.element, { scroll: this.boundTouchHandler, swipe: this.boundSwipeHandler });
@@ -106,6 +105,7 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
             return 'hScroll';
         };
         HScroll.prototype.destroy = function () {
+            var _this = this;
             var ele = this.element;
             ele.style.display = '';
             ele.classList.remove(CLS_ROOT);
@@ -118,7 +118,7 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
             });
             if (this.navTouchModules) {
                 this.navTouchModules.forEach(function (touchItem) {
-                    if ((touchItem.module) {
+                    if (touchItem.module) {
                         touchItem.module.destroy();
                         touchItem.module = null;
                     }
@@ -127,16 +127,14 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
                 this.navTouchModules = [];
                 this.navTouchModules = null;
             }
-            // Remove stored event listeners to prevent memory leak
             if (this.navEventListeners) {
-                var _this_1 = this;
                 this.navEventListeners.forEach(function (listener) {
                     listener.element.removeEventListener('keydown', listener.keydown);
                     listener.element.removeEventListener('keyup', listener.keyup);
                     listener.element.removeEventListener('mouseup', listener.mouseup);
                     listener.element.removeEventListener('touchend', listener.touchend);
                     listener.element.removeEventListener('contextmenu', listener.contextmenu);
-                    ej2_base_1.EventHandler.remove(listener.element, 'click', _this_1.clickEventHandler, _this_1);
+                    ej2_base_1.EventHandler.remove(listener.element, 'click', _this.clickEventHandler);
                 });
                 this.navEventListeners = [];
                 this.navEventListeners = null;
@@ -155,7 +153,6 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
                     ej2_base_2.detach(nav[1]);
                 }
             }
-            ej2_base_1.EventHandler.remove(this.scrollEle, 'scroll', this.scrollHandler, this);
             if (this.timeout) {
                 clearInterval(this.timeout);
                 this.timeout = null;
@@ -168,11 +165,11 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
                 this.touchModule.destroy();
                 this.touchModule = null;
             }
-            // Null out all stored references to prevent closure leaks
             this.boundTouchHandler = null;
             this.boundSwipeHandler = null;
             this.scrollEle = null;
             this.scrollItems = null;
+            ej2_base_1.EventHandler.remove(this.scrollEle, 'scroll', this.scrollHandler);
             _super.prototype.destroy.call(this);
         };
         HScroll.prototype.disable = function (value) {
@@ -261,18 +258,18 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
                 var boundTabHoldHandler = _this.tabHoldHandler.bind(_this);
                 var touchModule = new ej2_base_1.Touch(el, { tapHold: boundTabHoldHandler, tapHoldThreshold: 500 });
                 _this.navTouchModules.push({ module: touchModule, element: el });
-                // Store bound function references for later removal to prevent memory leak
                 var onKeyPressBound = _this.onKeyPress.bind(_this);
                 var onKeyUpBound = _this.onKeyUp.bind(_this);
                 var repeatScrollBound = _this.repeatScroll.bind(_this);
-                var contextMenuBound = function (e) { e.preventDefault(); };
+                var contextMenuBound = function (e) {
+                    e.preventDefault();
+                };
                 el.addEventListener('keydown', onKeyPressBound);
                 el.addEventListener('keyup', onKeyUpBound);
                 el.addEventListener('mouseup', repeatScrollBound);
                 el.addEventListener('touchend', repeatScrollBound);
                 el.addEventListener('contextmenu', contextMenuBound);
                 ej2_base_1.EventHandler.add(el, 'click', _this.clickEventHandler, _this);
-                
                 _this.navEventListeners.push({
                     element: el,
                     keydown: onKeyPressBound,
