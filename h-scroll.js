@@ -105,6 +105,7 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
             return 'hScroll';
         };
         HScroll.prototype.destroy = function () {
+            var _this = this;
             var ele = this.element;
             ele.style.display = '';
             ele.classList.remove(CLS_ROOT);
@@ -115,6 +116,29 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
             [].slice.call(overlay).forEach(function (ele) {
                 ej2_base_2.detach(ele);
             });
+            if (this.navTouchModules) {
+                this.navTouchModules.forEach(function (touchItem) {
+                    if (touchItem.module) {
+                        touchItem.module.destroy();
+                        touchItem.module = null;
+                    }
+                    touchItem.element = null;
+                });
+                this.navTouchModules = [];
+                this.navTouchModules = null;
+            }
+            if (this.navEventListeners) {
+                this.navEventListeners.forEach(function (listener) {
+                    listener.element.removeEventListener('keydown', listener.keydown);
+                    listener.element.removeEventListener('keyup', listener.keyup);
+                    listener.element.removeEventListener('mouseup', listener.mouseup);
+                    listener.element.removeEventListener('touchend', listener.touchend);
+                    listener.element.removeEventListener('contextmenu', listener.contextmenu);
+                    ej2_base_1.EventHandler.remove(listener.element, 'click', _this.clickEventHandler);
+                });
+                this.navEventListeners = [];
+                this.navEventListeners = null;
+            }
             for (var _i = 0, _a = [].slice.call(this.scrollItems.children); _i < _a.length; _i++) {
                 var elem = _a[_i];
                 ele.appendChild(elem);
@@ -130,8 +154,22 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
                 }
             }
             ej2_base_1.EventHandler.remove(this.scrollEle, 'scroll', this.scrollHandler);
-            this.touchModule.destroy();
-            this.touchModule = null;
+            if (this.timeout) {
+                clearInterval(this.timeout);
+                this.timeout = null;
+            }
+            if (this.keyTimer) {
+                clearTimeout(this.keyTimer);
+                this.keyTimer = null;
+            }
+            if (this.touchModule) {
+                this.touchModule.destroy();
+                this.touchModule = null;
+            }
+            this.boundTouchHandler = null;
+            this.boundSwipeHandler = null;
+            this.scrollEle = null;
+            this.scrollItems = null;
             _super.prototype.destroy.call(this);
         };
         HScroll.prototype.disable = function (value) {
@@ -210,16 +248,34 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
         };
         HScroll.prototype.eventBinding = function (ele) {
             var _this = this;
+            if (!this.navTouchModules) {
+                this.navTouchModules = [];
+            }
+            if (!this.navEventListeners) {
+                this.navEventListeners = [];
+            }
             [].slice.call(ele).forEach(function (el) {
-                new ej2_base_1.Touch(el, { tapHold: _this.tabHoldHandler.bind(_this), tapHoldThreshold: 500 });
-                el.addEventListener('keydown', _this.onKeyPress.bind(_this));
-                el.addEventListener('keyup', _this.onKeyUp.bind(_this));
-                el.addEventListener('mouseup', _this.repeatScroll.bind(_this));
-                el.addEventListener('touchend', _this.repeatScroll.bind(_this));
-                el.addEventListener('contextmenu', function (e) {
-                    e.preventDefault();
-                });
+                var boundTabHoldHandler = _this.tabHoldHandler.bind(_this);
+                var touchModule = new ej2_base_1.Touch(el, { tapHold: boundTabHoldHandler, tapHoldThreshold: 500 });
+                _this.navTouchModules.push({ module: touchModule, element: el });
+                var onKeyPressBound = _this.onKeyPress.bind(_this);
+                var onKeyUpBound = _this.onKeyUp.bind(_this);
+                var repeatScrollBound = _this.repeatScroll.bind(_this);
+                var contextMenuBound = function (e) { e.preventDefault(); };
+                el.addEventListener('keydown', onKeyPressBound);
+                el.addEventListener('keyup', onKeyUpBound);
+                el.addEventListener('mouseup', repeatScrollBound);
+                el.addEventListener('touchend', repeatScrollBound);
+                el.addEventListener('contextmenu', contextMenuBound);
                 ej2_base_1.EventHandler.add(el, 'click', _this.clickEventHandler, _this);
+                _this.navEventListeners.push({
+                    element: el,
+                    keydown: onKeyPressBound,
+                    keyup: onKeyUpBound,
+                    mouseup: repeatScrollBound,
+                    touchend: repeatScrollBound,
+                    contextmenu: contextMenuBound
+                });
             });
         };
         HScroll.prototype.repeatScroll = function () {
