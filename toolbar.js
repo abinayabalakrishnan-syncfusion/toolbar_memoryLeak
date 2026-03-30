@@ -805,10 +805,14 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
             this.refreshOverflow();
         };
         Toolbar.prototype.initScroll = function (element, innerItems) {
-            if (!this.scrollModule && this.checkOverflow(element, innerItems[0])) {
+            if (this.checkOverflow(element, innerItems[0])) {
+                // Destroy existing scroll module before creating a new one to prevent memory leak
+                if (this.scrollModule) {
+                    this.destroyScroll();
+                }
                 if (this.tbarAlign) {
                     this.element.querySelector('.' + CLS_ITEMS + ' .' + CLS_TBARCENTER).removeAttribute('style');
-                }
+                }            
                 if (this.isVertical) {
                     this.scrollModule = new v_scroll_1.VScroll({ scrollStep: this.scrollStep, enableRtl: this.enableRtl }, innerItems[0]);
                 }
@@ -886,6 +890,9 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
             var innerItems = ele.querySelector('.' + CLS_ITEMS);
             var priorityCheck = this.popupPriCount > 0;
             if (ele && ele.children.length > 0) {
+                if(this.scrollModule && this.overflow != 'Scrollable') {
+                    this.destroyScroll();
+                }
                 this.offsetWid = ele.offsetWidth;
                 this.remove(this.element, 'e-toolpop');
                 if (ej2_base_5.Browser.info.name === 'msie' && this.height === 'auto') {
@@ -898,6 +905,7 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
                         }
                         break;
                     case 'Popup':
+                        this.destroyScroll();
                         this.add(this.element, 'e-toolpop');
                         if (this.tbarAlign) {
                             this.removePositioning();
@@ -908,6 +916,7 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
                         this.toolbarAlign(innerItems);
                         break;
                     case 'MultiRow':
+                        this.destroyScroll();
                         this.add(innerItems, CLS_MULTIROW);
                         if (this.checkOverflow(ele, innerItems) && this.tbarAlign) {
                             this.removePositioning();
@@ -921,6 +930,7 @@ define(["require", "exports", "@syncfusion/ej2-base", "@syncfusion/ej2-base", "@
                         }
                         break;
                     case 'Extended':
+                        this.destroyScroll();
                         this.add(this.element, CLS_EXTEANDABLE_TOOLBAR);
                         if (this.checkOverflow(ele, innerItems) || priorityCheck) {
                             if (this.tbarAlign) {
